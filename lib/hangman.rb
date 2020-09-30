@@ -1,4 +1,53 @@
-class Board
+class Welcome
+
+  @@films = File.readlines 'movies.txt'
+  @@dictionary = File.readlines '5desk.txt'
+
+  def self.run
+    puts "\n\nWelcome to Hangman! To start a new game, enter your name below. To load a saved game, enter 'load'.\n\n---You can save or load a game at any time by entering 'save' or 'load'---"
+    choice = gets.chomp.capitalize
+    if choice == 'Load'
+      load
+    else
+      new_game(choice)
+    end
+  end
+
+  def self.load
+    if File.exist?('save_game')
+      puts 'Saved game loaded'.green
+      File.open('save_game') do |f|
+        game = Marshal.load(f)
+        game.start_game
+      end
+    else
+      puts "\n\nNo save file found\n\n".red
+      run
+    end
+  end
+
+  def self.new_game(choice)
+    player = Player.new(choice)
+
+    puts "\n\nGreetings, #{player.name.bold}. Choose a topic.\n1: Dictionary\n2: Films"
+    choice = gets.chomp
+
+    if choice == '1'
+      word = @@dictionary.sample.chomp
+    elsif choice == '2'
+      word = @@films.sample.chomp
+    else exit
+    end
+
+    game = Game.new(word, player)
+
+    game.start_game
+  end
+
+end
+
+class Game
+  attr_accessor :word, :board, :wrong_guesses, :player
   def initialize(word, player)
     @word = word.upcase.split('')
     @gallows = ["_______\n| /  |\n|/\n|\n|\n|\n______\n\n",
@@ -35,38 +84,51 @@ class Board
     print_board
     puts "\n Choose a letter, #{@player.name}:"
     @letter = gets.chomp.upcase
-    validate_guess?(@letter) ? assess_guess : invalid_guess
-    user_input
+    validate_guess(@letter)
   end
 
-  def validate_guess?(_letter)
-    return true if [*'A'..'Z'].include?(@letter.upcase) && @letter.length == 1
+  def validate_guess(_letter)
+    if @letter.downcase == 'save'
+      save_game
+    elsif @letter.downcase == 'load'
+      load_game
+    elsif [*'A'..'Z'].include?(@letter.upcase) && @letter.length == 1
+      assess_guess
+    else
+      puts "\n\nInvalid guess".red
+      user_input
+    end
   end
 
   def invalid_guess
-    print_board
     puts 'That was not a valid letter. Try again.'
     user_input
   end
 
   def assess_guess
-    if @word.include?(@letter)
+    if @board.include?(@letter) || @wrong_guesses.include?(@letter)
+      puts "\n\nLetter already taken".red
+    elsif @word.include?(@letter)
       update_board
-    elsif @board.include?(@letter) || @wrong_guesses.include?(@letter)
-      puts 'Letter already taken'
     else
       @wrong_guesses << @letter
       @player.lives += 1
-      puts @player.lives
     end
 
     game_over if @player.dead?
 
     game_win if @board.join == @word.join
+
+    user_input
+  end
+
+  def update_board
+    @correct_index = @word.each_index.select { |i| @word[i] == @letter }
+    @correct_index.each { |i| @board[i] = @letter }
   end
 
   def game_win
-    puts "\n\n\nCongratulations, #{@player.name}!\n\n".green.bold + @word.join.capitalize.gsub('/', ' ') + @gallows[7]
+    puts "\n\n\nCongratulations, #{@player.name}!\n\n".green.bold + @word.join.upcase.gsub('/', ' ') + @gallows[7]
     exit
   end
 
@@ -77,19 +139,30 @@ class Board
     response = gets.chomp
 
     if response.upcase == 'Y'
-      puts @word.join.capitalise.gsub('/', ' ')
+      puts @word.join.upcase.gsub('/', ' ')
       exit
     else exit
     end
   end
 
-  def update_board
-    @correct_index = @word.each_index.select { |i| @word[i] == @letter }
-    @correct_index.each { |i| @board[i] = @letter }
+  def save_game
+    File.open('save_game', 'w') { |f| Marshal.dump(self, f) }
+    puts '\n\nGame saved'.green
+    user_input
+  end
+
+  def load_game
+    if File.exist?('save_game')
+      Welcome.load
+    else
+      puts 'No save file found'.red
+      user_input
+    end
   end
 end
 
 class Player
+
   attr_accessor :lives, :name, :dead
   def initialize(name)
     @name = name
@@ -99,6 +172,7 @@ class Player
   def dead?
     return true if @lives == 6
   end
+
 end
 
 class String
@@ -115,22 +189,4 @@ class String
   end
 end
 
-films = File.readlines 'movies.txt'
-dictionary = File.readlines '5desk.txt'
-
-puts 'Welcome to Hangman. Please enter your name:'
-player = Player.new(gets.chomp.capitalize)
-
-puts "\n\nChoose a topic\n1: Dictionary\n2: Films"
-choice = gets.chomp
-
-if choice == '1'
-  word = dictionary.sample.chomp
-elsif choice == '2'
-  word = films.sample.chomp
-else exit
-end
-
-game = Board.new(word, player)
-
-game.start_game
+Welcome.run
