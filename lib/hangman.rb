@@ -32,9 +32,9 @@ class Welcome
     puts "\n\nGreetings, #{player.name.bold}. Choose a topic.\n1: Dictionary\n2: Films"
     choice = gets.chomp
 
-    if choice == '1'
+    if choice == '1' || choice.start_with?('dict'.downcase)
       word = @@dictionary.sample.chomp
-    elsif choice == '2'
+    elsif choice == '2' || choice.start_with?('film'.downcase)
       word = @@films.sample.chomp
     else exit
     end
@@ -134,7 +134,7 @@ class Game
 
   def game_over
     puts "\n\n\nGame over.".red.bold
-    puts @gallows[6] + "\n\n\n"
+    puts @gallows[6] + "\n"
     puts 'Reveal answer? Y/N'
     response = gets.chomp
 
@@ -147,7 +147,7 @@ class Game
 
   def save_game
     File.open('save_game', 'w') { |f| Marshal.dump(self, f) }
-    puts '\n\nGame saved'.green
+    puts "\n\nGame saved".green
     user_input
   end
 
