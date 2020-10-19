@@ -1,6 +1,7 @@
-class Welcome
 
-  @@films = File.readlines 'movies.txt'
+
+class Welcome
+  @@films = File.readlines 'hangmanfilms.txt'
   @@dictionary = File.readlines '5desk.txt'
 
   def self.run
@@ -30,6 +31,7 @@ class Welcome
     player = Player.new(choice)
 
     puts "\n\nGreetings, #{player.name.bold}. Choose a topic.\n1: Dictionary\n2: Films"
+
     choice = gets.chomp
 
     if choice == '1' || choice.start_with?('dict'.downcase)
@@ -43,7 +45,6 @@ class Welcome
 
     game.start_game
   end
-
 end
 
 class Game
@@ -162,7 +163,6 @@ class Game
 end
 
 class Player
-
   attr_accessor :lives, :name, :dead
   def initialize(name)
     @name = name
@@ -172,7 +172,6 @@ class Player
   def dead?
     return true if @lives == 6
   end
-
 end
 
 class String
